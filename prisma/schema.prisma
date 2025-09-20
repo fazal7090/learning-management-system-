@@ -1,0 +1,76 @@
+
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"   // or "mysql" / "sqlite" depending on your DB
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(MEMBER)  // "ADMIN" or "MEMBER"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  borrowRecords BorrowRecord[]
+  reviews       Review[]
+}
+
+model Book {
+  id          Int        @id @default(autoincrement())
+  title       String
+  author      String
+  category    String?
+  isbn        String?    @unique
+  publishedAt DateTime?
+  status      BookStatus @default(AVAILABLE)
+  quantity    Int        @default(1)   // ✅ number of copies available
+  coverUrl    String?    // Cloudinary/S3 URL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  borrowRecords BorrowRecord[]
+  reviews       Review[]
+}
+
+model BorrowRecord {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  bookId     Int
+  borrowedAt DateTime @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  rating    Int      // 1–5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum BookStatus {
+  AVAILABLE
+  BORROWED
+  RESERVED
+}
